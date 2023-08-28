@@ -41,9 +41,8 @@ List any requirements or dependencies that need to be fulfilled before installin
 
 ### Installation Steps
 
-1. Clone this repository: `git clone https://ganu.b:3hst5je536qdcw7mylbs7sxih4pql7ykrkpk7vhnkk2crvhi77kq@dev.azure.com/caratred/ERPNEXT/_git/Ultrafil --branch master`
-2. Go to the app directory: `cd Ultrafil`
-3. Install the app using bench: `bench --site sitename install-app Ultrafil`
+1. Clone this repository: `bench get-app https://ganu.b:iy5o4p7iqnsec7eifldlabaeemx3xrez35lbmrdag2ydwtezjeyq@dev.azure.com/caratred/ERPNEXT/_git/gatepass --branch master`
+3. Install the app using bench: `bench --site sitename install-app gatepass`
 
 ## Usage
 
