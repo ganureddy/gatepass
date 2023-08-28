@@ -1,30 +1,64 @@
-<<<<<<< HEAD
 ## Gatepass
-
-gatepass
 
 #### License
 
 MIT
-=======
-# Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
 
-# Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
-1.	Installation process
-2.	Software dependencies
-3.	Latest releases
-4.	API references
 
-# Build and Test
-TODO: Describe and show how to build your code and run the tests. 
+A brief description of your custom app's purpose and functionality.
+# Created By Carat<span style="color:red;">RED</span> Technologies.
 
-# Contribute
-TODO: Explain how other users and developers can contribute to make your code better. 
 
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
->>>>>>> 00c24ffee531206102ced9e1506337374e6d5525
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Configuration](#configuration)
+- [Contributing](#contributing)
+- [License](#license)
+
+## Features
+
+List the key features and functionalities of your custom app.
+
+- Feature 1: Description
+- Feature 2: Description
+- ...
+
+## Installation
+
+Provide step-by-step instructions on how to install your app. This could include prerequisites, installation methods, and any dependencies that need to be fulfilled.
+
+### Prerequisites
+
+List any requirements or dependencies that need to be fulfilled before installing your app.
+
+- ERPNext version: x.y.z
+- Dependency 1: Description
+- Dependency 2: Description
+- ...
+
+### Installation Steps
+
+1. Clone this repository: `git clone https://ganu.b:3hst5je536qdcw7mylbs7sxih4pql7ykrkpk7vhnkk2crvhi77kq@dev.azure.com/caratred/ERPNEXT/_git/Ultrafil --branch master`
+2. Go to the app directory: `cd Ultrafil`
+3. Install the app using bench: `bench --site sitename install-app Ultrafil`
+
+## Usage
+
+Explain how users can use your app within ERPNext. Provide examples, screenshots, and use cases to illustrate its functionality.
+
+## Configuration
+
+If your app has any configuration options or settings, describe how users can configure and customize these options.
+
+## Contributing
+
+If you're open to contributions from the community, provide guidelines for how other developers can contribute to your app. Include information about submitting issues, making pull requests, coding standards, and any other relevant details.
+
+## License
+
+State the license under which your app is released. For example:
+
+This project is licensed under the [MIT License](LICENSE).
