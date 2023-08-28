@@ -7,6 +7,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
+  "gate_pass_type",
   "name1",
   "party_type",
   "party",
@@ -30,12 +31,14 @@
   "column_break_o69at",
   "target_warehouse",
   "column_break_4s6cq",
-  "item"
+  "item",
+  "note"
  ],
  "fields": [
   {
    "fieldname": "name1",
    "fieldtype": "Data",
+   "hidden": 1,
    "label": "Name"
   },
   {
@@ -118,9 +121,11 @@
    "options": "Warehouse"
   },
   {
+   "depends_on": "eval:doc.gate_pass_type==\"Returnable\"",
    "fieldname": "target_warehouse",
    "fieldtype": "Link",
    "label": "Target Warehouse",
+   "mandatory_depends_on": "eval:doc.gate_pass_type==\"Returnable\"",
    "options": "Warehouse"
   },
   {
@@ -167,12 +172,23 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company"
+  },
+  {
+   "fieldname": "gate_pass_type",
+   "fieldtype": "Select",
+   "label": "Gate Pass Type",
+   "options": "\nReturnable\nNon-Returnable"
+  },
+  {
+   "fieldname": "note",
+   "fieldtype": "Small Text",
+   "label": "Note"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-08-28 14:48:23.787599",
+ "modified": "2023-08-28 15:29:49.212684",
  "modified_by": "Administrator",
  "module": "Gatepass",
  "name": "Gate Pass",
