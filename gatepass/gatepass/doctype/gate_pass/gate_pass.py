@@ -10,7 +10,7 @@ class GatePass(Document):
 
 
 @frappe.whitelist()
-def customer_address_details(party,party_type,company):
+def party_address_details(party,party_type,company):
         
     party_details = get_party_details(
         party=party,
@@ -20,7 +20,5 @@ def customer_address_details(party,party_type,company):
 		party_address=None,
 		company_address=None,
 		shipping_address=None,
-	)
-    print(party_details,";;;;;;;;;;;;;;;;;;;;")
-        
+	)        
     return party_details
