@@ -37,3 +37,15 @@ frappe.ui.form.on('Gate Pass', {
 		
 	}
 });
+
+
+frappe.ui.form.on('Gate Pass', {
+    refresh: function(frm) {
+        frm.add_custom_button(__('Material Returns'), function() {
+            frappe.call({method: "gatepass.gatepass.doctype.gate_pass.gate_pass.material_returns",
+            // args: {
+            //     "mobile_no":frm.doc.mobile_no,
+            // },
+        })
+    });
+}});

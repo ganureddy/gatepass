@@ -96,3 +96,12 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
             data.docstatus = 1
             data.insert()
             
+    if method == 'on_cancel':
+        self.ignore_linked_doctypes = ("Stock Ledger Entry")
+        frappe.db.set_value("Stock Ledger Entry", {"voucher_no":self.name}, "is_cancelled", 1)
+        frappe.db.commit()
+        
+        
+@frappe.whitelist()        
+def material_returns():
+    print("-----------------------------------------")    
