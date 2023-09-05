@@ -25,9 +25,11 @@ def party_address_details(party,party_type,company):
 	)        
     return party_details
 
+
 def create_stock_ledger_entry_through_gatepass(self,method=None):
     '''
     This Method Create Stock Ledger Entry Through Gate Pass After Submit.
+    This Method Work On Gate Pass Type Is Non-Returnable.
     Also Cancel of Stock Ledger Entry Of Same Voucher No.
     
     '''
@@ -51,7 +53,7 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
         "incoming_rate":0.0,
         'outgoing_rate':0.0
     }
-    
+        
     if method == 'on_submit':
         
         for i in range(len(self.item)):
@@ -64,7 +66,7 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
                 'stock_uom':self.item[i].uom,
                 'company':self.company,
                 'voucher_no':self.item[i].parent,
-                "valuation_rate":(self.item[i].qty*self.item[i].rate),
+                "valuation_rate":(self.item[i].rate),
                 "stock_value_difference":-(self.item[i].qty*self.item[i].rate)
             })
             
@@ -100,8 +102,73 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
         self.ignore_linked_doctypes = ("Stock Ledger Entry")
         frappe.db.set_value("Stock Ledger Entry", {"voucher_no":self.name}, "is_cancelled", 1)
         frappe.db.commit()
-        
+    
+            
         
 @frappe.whitelist()        
-def material_returns():
-    print("-----------------------------------------")    
+def material_returns_through_gatepass(doctype,name):
+    data = frappe.get_doc(doctype,name)
+    gate_pass_item = {
+        "doctype":"Stock Ledger Entry",
+        'item_code':None,
+        'warehouse':None,
+        'posting_date':None,
+        'posting_time':None,
+        'actual_qty':0,
+        'voucher_type':"Gate Pass",
+        'valuation_rate':0.0,
+        'voucher_no':None,
+        "company":None,
+        'fiscal_year':None,
+        'qty_after_transaction':0,
+        'stock_uom':None,
+        'stock_value':0.0,
+        'stock_value_difference':0.0,
+        'stock_queue':None,
+        "incoming_rate":0.0,
+        'outgoing_rate':0.0
+    }
+    
+    for i in range(len(data.item)):
+            gate_pass_item.update({
+                'item_code':data.item[i].item_code,
+                'warehouse':data.source_warehouse,
+                "posting_date":data.date,
+                'posting_time':data.time,
+                'actual_qty':data.item[i].qty,
+                'stock_uom':data.item[i].uom,
+                'company':data.company,
+                'voucher_no':data.item[i].parent,
+                "valuation_rate":(data.item[i].rate),
+                "stock_value_difference":(data.item[i].qty*data.item[i].rate)
+            })
+            
+            # its Give last or previous stock ledger entry of this item code 
+            previous_sle = get_previous_sle({
+                        "item_code": data.item[i].item_code,
+                        "warehouse": data.source_warehouse or data.source_warehouse,
+                        "posting_date": data.date,
+                        "posting_time": data.time,
+            })
+            
+            gate_pass_item.update({
+                "qty_after_transaction":(previous_sle['qty_after_transaction']+data.item[i].qty),
+                "stock_value":(previous_sle["stock_value"] + gate_pass_item['valuation_rate']),
+            })
+            
+            after_transaction = gate_pass_item['qty_after_transaction']
+            queue = gate_pass_item['valuation_rate']
+            stock_queue= f"[[{after_transaction}, {queue}]]"
+            
+            gate_pass_item.update({
+                "stock_queue":stock_queue,
+                'fiscal_year':previous_sle['fiscal_year'],
+                'voucher_detail_no':data.item[i].name,
+                'incoming_rate':data.item[i].rate
+            })
+            
+            # enrty create
+            data = frappe.get_doc(gate_pass_item)
+            data.docstatus = 1
+            data.insert()
+    
