@@ -118,13 +118,17 @@ app_license = "MIT"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-#	"*": {
-#		"on_update": "method",
-#		"on_cancel": "method",
-#		"on_trash": "method"
-#	}
-# }
+doc_events = {
+	# "*": {
+	# 	"on_update": "method",
+	# 	"on_cancel": "method",
+	# 	"on_trash": "method"
+	# }
+    "Gate Pass":{
+        "on_submit":"gatepass.gatepass.doctype.gate_pass.gate_pass.create_stock_ledger_entry_through_gatepass",
+        "on_cancel":"gatepass.gatepass.doctype.gate_pass.gate_pass.create_stock_ledger_entry_through_gatepass"
+    }
+}
 
 # Scheduled Tasks
 # ---------------
