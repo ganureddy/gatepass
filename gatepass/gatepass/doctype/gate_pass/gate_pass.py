@@ -5,6 +5,8 @@ import frappe
 from frappe.model.document import Document
 from erpnext.accounts.party import  get_party_details
 from erpnext.stock.stock_ledger import NegativeStockError, get_previous_sle, get_valuation_rate
+import json
+import pandas as pd
 
 class GatePass(Document):
     pass
@@ -31,8 +33,8 @@ def create_gl_entry_through_gate_pass(data,total,fiscal_year):
         "credit":0.0,
         "account_currency":"INR",
         "against":None,
-        "debit_amount_in_account_currency":0.0,
-        "credit_amount_in_account_currency":0.0,
+        "debit_in_account_currency":0.0,
+        "credit_in_account_currency":0.0,
         "voucher_type":None,
         "voucher_no":None,
         "remarks":None,
@@ -43,22 +45,20 @@ def create_gl_entry_through_gate_pass(data,total,fiscal_year):
     }
     
     # First entry for inventory account (Stock In Hand) for gate pass Out (Issue) or In (Receipt)
+    print(data.status,";;;;;;;;;;;;;;;;;;;;;/////////////////")
     gl_entry_raw_data.update({
         "posting_date":data.date,
         "account":company_account.default_inventory_account,
         "cost_center":company_account.cost_center,
-        "credit":round(total,2) if data.status != "To Be Return" else 0.0,
+        "credit":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
-        "credit_amount_in_account_currency":round(total,2) 
-        if data.status != "To Be Return" else 0.0,
+        "credit_in_account_currency":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
-        "debit":0.0 if data.status != "To Be Return" else round(total,2),
+        "debit":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "debit_amount_in_account_currency":0.0 
-        if data.status != "To Be Return" else round(total,2),
+        "debit_in_account_currency":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "against":company_account.default_expense_account 
-        if data.status != "To Be Return" else company_account.stock_adjustment_account,
+        "against":company_account.default_expense_account if data.status not in ["To Be Return","Partially Return"] else company_account.stock_adjustment_account,
         
         "voucher_type":data.doctype,
         'voucher_no':data.name,
@@ -73,18 +73,16 @@ def create_gl_entry_through_gate_pass(data,total,fiscal_year):
         
     # Second entry for expense account Out (Cost of Goods Sold) or In (Stock Adjustment)
     gl_entry_raw_data.update({
-        "account":company_account.default_expense_account 
-        if data.status != "To Be Return" else company_account.stock_adjustment_account,
+        "account":company_account.default_expense_account if data.status not in ["To Be Return","Partially Return"] else company_account.stock_adjustment_account,
         
         "cost_center":company_account.cost_center,
-        "credit":0.0 if data.status != "To Be Return" else round(total,2),
+        "credit":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "credit_amount_in_account_currency":0.0 
-        if data.status != "To Be Return" else round(total,2),
+        "credit_in_account_currency":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "debit":round(total,2) if data.status != "To Be Return" else 0.0,
-        "debit_amount_in_account_currency":round(total,2) 
-        if data.status != "To Be Return" else 0.0,
+        "debit":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
+        
+        "debit_in_account_currency":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
         "against":company_account.default_inventory_account,
         "voucher_type":data.doctype,
@@ -171,7 +169,7 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
                         "posting_time": self.time,
             })
             
-            total_amount += self.item[i].amount
+            total_amount += (self.item[i].qty*self.item[i].rate)
             fiscal_year = previous_sle['fiscal_year']
             
             gate_pass_item.update({
@@ -220,83 +218,106 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
     
        
 @frappe.whitelist()        
-def material_returns_through_gatepass(doctype,name):
+def material_returns_through_gatepass(doctype,name,return_item):
     
-    data = frappe.get_doc(doctype,name)
+    data_details = frappe.get_doc(doctype,name)
     
-    gate_pass_item = {
-        "doctype":"Stock Ledger Entry",
-        'item_code':None,
-        'warehouse':None,
-        'posting_date':None,
-        'posting_time':None,
-        'actual_qty':0,
-        'voucher_type':"Gate Pass",
-        'valuation_rate':0.0,
-        'voucher_no':None,
-        "company":None,
-        'fiscal_year':None,
-        'qty_after_transaction':0,
-        'stock_uom':None,
-        'stock_value':0.0,
-        'stock_value_difference':0.0,
-        'stock_queue':None,
-        "incoming_rate":0.0,
-        'outgoing_rate':0.0
-    }
-    total_amount = 0.0
-    fiscal_year = None
+    actual_items_in_gp = data_details.as_dict()['item']
     
-    for i in range(len(data.item)):
-        gate_pass_item.update({
-            'item_code':data.item[i].item_code,
-            'warehouse':data.source_warehouse,
-            "posting_date":data.date,
-            'posting_time':data.time,
-            'actual_qty':data.item[i].qty,
-            'stock_uom':data.item[i].uom,
-            'company':data.company,
-            'voucher_no':data.item[i].parent,
-            "valuation_rate":(data.item[i].rate),
-            "stock_value_difference":(data.item[i].qty*data.item[i].rate)
-        })
-        total_amount += data.item[i].amount
-        
-        # its Give last or previous stock ledger entry of this item code 
-        previous_sle = get_previous_sle({
-                    "item_code": data.item[i].item_code,
-                    "warehouse": data.source_warehouse or data.source_warehouse,
-                    "posting_date": data.date,
-                    "posting_time": data.time,
-        })
-        
-        fiscal_year = previous_sle['fiscal_year']
-        
-        gate_pass_item.update({
-            "qty_after_transaction":(previous_sle['qty_after_transaction']+data.item[i].qty),
-            "stock_value":(previous_sle["stock_value"] + gate_pass_item['valuation_rate']),
-        })
-        
-        after_transaction = gate_pass_item['qty_after_transaction']
-        queue = gate_pass_item['valuation_rate']
-        stock_queue= f"[[{after_transaction}, {queue}]]"
-        
-        gate_pass_item.update({
-            "stock_queue":stock_queue,
-            'fiscal_year':previous_sle['fiscal_year'],
-            'voucher_detail_no':data.item[i].name,
-            'incoming_rate':data.item[i].rate
-        })
-        
-        # enrty create
-        doc = frappe.get_doc(gate_pass_item)
-        doc.docstatus = 1
-        doc.insert()
-        
-    create_gl_entry_through_gate_pass(data,total_amount,fiscal_year)
-    frappe.db.set_value(data.doctype, {"name":data.name}, "status", "Completed")
-    frappe.db.commit()
+    return_items = json.loads(return_item)['alternative_items']
     
-    data.reload()
-    frappe.db.commit()
+    data = []
+    any_change_in_qty = False
+    for i in return_items:
+        for j in actual_items_in_gp:
+            
+            if i['docname'] == j["name"]:
+                data.append(i)
+                any_change_in_qty = False if i['actual_qty'] == (i['qty']+i['remaining_qty']) else True
+                continue
+    print(data,"lllllllllllllllllllllllllll")
+        
+    if data_details.docstatus == 1:
+        gate_pass_item = {
+            "doctype":"Stock Ledger Entry",
+            'item_code':None,
+            'warehouse':None,
+            'posting_date':None,
+            'posting_time':None,
+            'actual_qty':0,
+            'voucher_type':"Gate Pass",
+            'valuation_rate':0.0,
+            'voucher_no':None,
+            "company":None,
+            'fiscal_year':None,
+            'qty_after_transaction':0,
+            'stock_uom':None,
+            'stock_value':0.0,
+            'stock_value_difference':0.0,
+            'stock_queue':None,
+            "incoming_rate":0.0,
+            'outgoing_rate':0.0
+        }
+        total_amount = 0.0
+        fiscal_year = None
+        
+        for i in range(len(data)):
+            gate_pass_item.update({
+                'item_code':data[i]["item_code"],
+                'warehouse':data_details.source_warehouse,
+                "posting_date":data_details.date,
+                'posting_time':data_details.time,
+                'actual_qty':data[i]["qty"],
+                'stock_uom':data[i]["uom"],
+                'company':data_details.company,
+                'voucher_no':data_details.name,
+                "valuation_rate":(data[i]["rate"]),
+                "stock_value_difference":(data[i]["qty"]*data[i]["rate"])
+            })
+            total_amount += (data[i]["qty"]*data[i]["rate"])
+            
+            # its Give last or previous stock ledger entry of this item code 
+            previous_sle = get_previous_sle({
+                        "item_code": data[i]["item_code"],
+                        "warehouse": data_details.source_warehouse or data_details.source_warehouse,
+                        "posting_date": data_details.date,
+                        "posting_time": data_details.time,
+            })
+            
+            fiscal_year = previous_sle['fiscal_year']
+            
+            gate_pass_item.update({
+                "qty_after_transaction":(previous_sle['qty_after_transaction']+data[i]["qty"]),
+                "stock_value":(previous_sle["stock_value"] + gate_pass_item['valuation_rate']),
+            })
+            
+            after_transaction = gate_pass_item['qty_after_transaction']
+            queue = gate_pass_item['valuation_rate']
+            stock_queue= f"[[{after_transaction}, {queue}]]"
+            
+            gate_pass_item.update({
+                "stock_queue":stock_queue,
+                'fiscal_year':previous_sle['fiscal_year'],
+                'voucher_detail_no':data[i]["docname"],
+                'incoming_rate':data[i]["rate"]
+            })
+            
+            # enrty create
+            doc = frappe.get_doc(gate_pass_item)
+            doc.docstatus = 1
+            doc.insert()
+            
+        create_gl_entry_through_gate_pass(data_details,total_amount,fiscal_year)
+        
+        status_value = {}
+        if not any_change_in_qty:
+            status_value.update({"status":"Completed"})
+            
+        else:
+            status_value.update({"status":"Partially Return"})
+           
+        
+        return {'success':True,"data":status_value}
     
+    
+        
