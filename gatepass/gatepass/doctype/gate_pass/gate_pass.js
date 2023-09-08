@@ -37,22 +37,16 @@ frappe.ui.form.on('Gate Pass', {
 		
 	}
 });
+
 // frappe.ui.form.on('Gate Pass', {
-// 	refresh: function(frm) {
+// 	item: function(frm) {
 // 		if (frm.doc.item){
 // 			let total = 0.0
 // 			let item = frm.doc.item
-			
 // 			item.forEach(f=>{
 // 				console.log(f,";;;;;;;;;;;;;;;;;;;")
 // 				total += (f.qty * f.rate)
-// 				// if (f.qty !== f.actual_qty){
-// 				// 	let actual_qty = f.qty
-// 				// 	f.actual_qty = actual_qty
-// 				// 	// frm.set_value(,"actual_qty",actual_qty)
-// 				// }
 // 			})
-// 			refresh_field("item");
 // 			frm.set_value("total",total)
 
 // 		}
@@ -62,8 +56,7 @@ frappe.ui.form.on('Gate Pass', {
 
 frappe.ui.form.on('Gate Pass', {
     refresh: function(frm) {
-		// frm.doc.docstatus === 1 && 
-		if(frm.doc.status !== 'Cancelled'){
+		if(frm.doc.docstatus === 1 && frm.doc.status !== 'Cancelled' && frm.doc.status !== "Completed"){
 			frm.add_custom_button(__('Material Returns'), function() {
 				let data = [];
 				let child_docname = "item"
@@ -142,22 +135,12 @@ frappe.ui.form.on('Gate Pass', {
 								// in_list_view: 1,
 								label: __('Rate')
 							},
-							// {
-
-							// 	fieldtype:'Float',
-							// 	fieldname:"previous_qty",
-							// 	hidden: 1,
-							// 	default:0,
-							// 	// read_only: 1,
-							// 	// in_list_view: 1,
-							// 	label: __('Previous Qty')
-							// }
 							]
 						},
 						
 					],
 					primary_action(values) {
-						console.log(values,"llllllllllllllllllllllll");
+						let final_remaining_qty = 0
 						frappe.call({method: "gatepass.gatepass.doctype.gate_pass.gate_pass.material_returns_through_gatepass",
 						args: {
 							name:frm.doc.name,
@@ -165,22 +148,37 @@ frappe.ui.form.on('Gate Pass', {
 							return_item :values
 						},"callback": function(response){
 							if(response){
-								console.log(response.message,";;;;;;;;;;;;;;;")
 								
 								values['alternative_items'].forEach(gate_child=>{
 						
 									let row = frappe.get_doc(child_doctype, gate_child.docname);
 									let transfer_in = gate_child.qty
-
+									let qty = 0
+									let remaining_qty = 0
 									row['item_code'] = gate_child.item_code
-									frappe.model.set_value(row.doctype, row.name, 'qty', transfer_in);
-									frappe.model.set_value(row.doctype,row.name,"actual_qty",gate_child.actual_qty)
+									if (row.remaining_qty === 0){
+										qty = transfer_in+0
+										remaining_qty = (row.actual_qty - (transfer_in+0))
+										final_remaining_qty += (row.actual_qty - (transfer_in+0))
+									}
+									else{
+										qty = transfer_in+row.qty
+										remaining_qty = (row.actual_qty - (transfer_in+row.qty))
+										final_remaining_qty += (row.actual_qty - (transfer_in+row.qty))
+									}
 
-									let remaining_qty = (gate_child.actual_qty - (transfer_in + gate_child.remaining_qty))
+									frappe.model.set_value(row.doctype, row.name, 'qty', qty);
+									
+									if (final_remaining_qty === 0){
+										let status = 'Completed'
+										frm.set_value("status",status)
+									}
+									else{
+										frm.set_value("status","Partially Return")
+									}
 									frappe.model.set_value(row.doctype,row.name,"remaining_qty",remaining_qty)
 									frm.trigger(gate_child.item_code, row.doctype, row.name)
 								});
-								frm.set_value("status",response.message.data.status)
 							}
 						}
 					});
@@ -199,13 +197,12 @@ frappe.ui.form.on('Gate Pass', {
 						"docname": child_data.name,
 						"item_code": child_data.item_code,
 						"item_name":child_data.item_name,
-						"qty": (child_data.qty-child_data.remaining_qty), // Remaining Qty  Tranfor IN To Store
+						"qty": child_data.qty, // Remaining Qty  Tranfor IN To Store
 						"uom":child_data.uom,
 						"amount":child_data.amount,
-						"actual_qty":(child_data.qty + child_data.remaining_qty),
+						"actual_qty":child_data.actual_qty,
 						"remaining_qty":child_data.remaining_qty,
 						'rate':child_data.rate,
-						// 'previous_qty':child_data.qty // Previous Qty  Tranfor IN To Store
 					});
 				})
 				data = dialogs.fields_dict.alternative_items.df.data;

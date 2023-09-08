@@ -45,20 +45,22 @@ def create_gl_entry_through_gate_pass(data,total,fiscal_year):
     }
     
     # First entry for inventory account (Stock In Hand) for gate pass Out (Issue) or In (Receipt)
-    print(data.status,";;;;;;;;;;;;;;;;;;;;;/////////////////")
     gl_entry_raw_data.update({
         "posting_date":data.date,
         "account":company_account.default_inventory_account,
         "cost_center":company_account.cost_center,
         "credit":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
-        "credit_in_account_currency":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
+        "credit_in_account_currency":round(total,2)
+        if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
         "debit":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "debit_in_account_currency":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
+        "debit_in_account_currency":0.0 
+        if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "against":company_account.default_expense_account if data.status not in ["To Be Return","Partially Return"] else company_account.stock_adjustment_account,
+        "against":company_account.default_expense_account 
+        if data.status not in ["To Be Return","Partially Return"] else company_account.stock_adjustment_account,
         
         "voucher_type":data.doctype,
         'voucher_no':data.name,
@@ -76,13 +78,17 @@ def create_gl_entry_through_gate_pass(data,total,fiscal_year):
         "account":company_account.default_expense_account if data.status not in ["To Be Return","Partially Return"] else company_account.stock_adjustment_account,
         
         "cost_center":company_account.cost_center,
-        "credit":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
+        "credit":0.0 
+        if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "credit_in_account_currency":0.0 if data.status not in ["To Be Return","Partially Return"] else round(total,2),
+        "credit_in_account_currency":0.0 
+        if data.status not in ["To Be Return","Partially Return"] else round(total,2),
         
-        "debit":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
+        "debit":round(total,2) 
+        if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
-        "debit_in_account_currency":round(total,2) if data.status not in ["To Be Return","Partially Return"] else 0.0,
+        "debit_in_account_currency":round(total,2) 
+        if data.status not in ["To Be Return","Partially Return"] else 0.0,
         
         "against":company_account.default_inventory_account,
         "voucher_type":data.doctype,
@@ -219,6 +225,8 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
        
 @frappe.whitelist()        
 def material_returns_through_gatepass(doctype,name,return_item):
+    print(doctype, name, return_item)
+    
     
     data_details = frappe.get_doc(doctype,name)
     
@@ -227,15 +235,12 @@ def material_returns_through_gatepass(doctype,name,return_item):
     return_items = json.loads(return_item)['alternative_items']
     
     data = []
-    any_change_in_qty = False
+    
     for i in return_items:
         for j in actual_items_in_gp:
-            
             if i['docname'] == j["name"]:
                 data.append(i)
-                any_change_in_qty = False if i['actual_qty'] == (i['qty']+i['remaining_qty']) else True
                 continue
-    print(data,"lllllllllllllllllllllllllll")
         
     if data_details.docstatus == 1:
         gate_pass_item = {
@@ -309,15 +314,14 @@ def material_returns_through_gatepass(doctype,name,return_item):
             
         create_gl_entry_through_gate_pass(data_details,total_amount,fiscal_year)
         
-        status_value = {}
-        if not any_change_in_qty:
-            status_value.update({"status":"Completed"})
-            
-        else:
-            status_value.update({"status":"Partially Return"})
-           
         
-        return {'success':True,"data":status_value}
+        return {'success':True}
     
     
+# update actual qty in item child table,
+def update_actual_value(doc, method=None):
+    for each in doc.item:
+        frappe.db.set_value("Gate pass item details",{'name':each.name},"actual_qty", each.qty)
+        frappe.db.commit()
+        doc.reload()
         

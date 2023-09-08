@@ -123,7 +123,8 @@
    "fieldname": "source_warehouse",
    "fieldtype": "Link",
    "label": "Source Warehouse",
-   "options": "Warehouse"
+   "options": "Warehouse",
+   "reqd": 1
   },
   {
    "depends_on": "eval:doc.gate_pass_type==\"Returnable\"",
@@ -219,7 +220,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2023-09-07 16:30:41.086750",
+ "modified": "2023-09-08 16:52:27.915356",
  "modified_by": "Administrator",
  "module": "Gatepass",
  "name": "Gate Pass",
