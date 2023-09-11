@@ -6,7 +6,6 @@ from frappe.model.document import Document
 from erpnext.accounts.party import  get_party_details
 from erpnext.stock.stock_ledger import NegativeStockError, get_previous_sle, get_valuation_rate
 import json
-import pandas as pd
 
 class GatePass(Document):
     pass

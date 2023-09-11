@@ -155,6 +155,7 @@ frappe.ui.form.on('Gate Pass', {
 									let transfer_in = gate_child.qty
 									let qty = 0
 									let remaining_qty = 0
+									let amount = 0.0
 									row['item_code'] = gate_child.item_code
 									if (row.remaining_qty === 0){
 										qty = transfer_in+0
@@ -176,7 +177,9 @@ frappe.ui.form.on('Gate Pass', {
 									else{
 										frm.set_value("status","Partially Return")
 									}
+									amount = row.rate * qty
 									frappe.model.set_value(row.doctype,row.name,"remaining_qty",remaining_qty)
+									frappe.model.set_value(row.doctype,row.name,"amount",amount)
 									frm.trigger(gate_child.item_code, row.doctype, row.name)
 								});
 							}
