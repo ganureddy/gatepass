@@ -125,7 +125,7 @@ doc_events = {
 	# 	"on_trash": "method"
 	# }
     "Gate Pass":{
-        "on_update":"gatepass.gatepass.doctype.gate_pass.gate_pass.update_actual_value",
+        "after_insert":"gatepass.gatepass.doctype.gate_pass.gate_pass.update_actual_value",
         "on_submit":"gatepass.gatepass.doctype.gate_pass.gate_pass.create_stock_ledger_entry_through_gatepass",
         "on_cancel":"gatepass.gatepass.doctype.gate_pass.gate_pass.create_stock_ledger_entry_through_gatepass"
     }

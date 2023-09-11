@@ -179,7 +179,7 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
             
             gate_pass_item.update({
                 "qty_after_transaction":(previous_sle['qty_after_transaction']-self.item[i].qty),
-                "stock_value":(previous_sle["stock_value"] -gate_pass_item['valuation_rate']),
+                "stock_value":(previous_sle["stock_value"] -(self.item[i].qty*self.item[i].rate)),
             })
             
             after_transaction = gate_pass_item['qty_after_transaction']
@@ -292,7 +292,7 @@ def material_returns_through_gatepass(doctype,name,return_item):
             
             gate_pass_item.update({
                 "qty_after_transaction":(previous_sle['qty_after_transaction']+data[i]["qty"]),
-                "stock_value":(previous_sle["stock_value"] + gate_pass_item['valuation_rate']),
+                "stock_value":(previous_sle["stock_value"] + (data[i]["qty"]*data[i]["rate"])),
             })
             
             after_transaction = gate_pass_item['qty_after_transaction']
@@ -320,7 +320,7 @@ def material_returns_through_gatepass(doctype,name,return_item):
 # update actual qty in item child table,
 def update_actual_value(doc, method=None):
     for each in doc.item:
-        frappe.db.set_value("Gate pass item details",{'name':each.name},"actual_qty", each.qty)
+        frappe.db.set_value("Gate pass item details",{'name':each.name},{"actual_qty":each.qty,'remaining_qty':each.qty})
         frappe.db.commit()
         doc.reload()
         

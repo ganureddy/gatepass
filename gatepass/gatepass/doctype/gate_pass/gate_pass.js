@@ -155,20 +155,21 @@ frappe.ui.form.on('Gate Pass', {
 									let transfer_in = gate_child.qty
 									let qty = 0
 									let remaining_qty = 0
-									let amount = 0.0
+		
 									row['item_code'] = gate_child.item_code
-									if (row.remaining_qty === 0){
+									if (row.remaining_qty === row.qty){
 										qty = transfer_in+0
 										remaining_qty = (row.actual_qty - (transfer_in+0))
 										final_remaining_qty += (row.actual_qty - (transfer_in+0))
 									}
 									else{
-										qty = transfer_in+row.qty
-										remaining_qty = (row.actual_qty - (transfer_in+row.qty))
-										final_remaining_qty += (row.actual_qty - (transfer_in+row.qty))
+										// qty = transfer_in+row.qty
+										qty = row.actual_qty - transfer_in
+										remaining_qty = (row.actual_qty - (transfer_in+qty))
+										final_remaining_qty += (row.actual_qty - (transfer_in+qty))
 									}
 
-									frappe.model.set_value(row.doctype, row.name, 'qty', qty);
+									// frappe.model.set_value(row.doctype, row.name, 'qty', qty);
 									
 									if (final_remaining_qty === 0){
 										let status = 'Completed'
@@ -177,9 +178,8 @@ frappe.ui.form.on('Gate Pass', {
 									else{
 										frm.set_value("status","Partially Return")
 									}
-									amount = row.rate * qty
+								
 									frappe.model.set_value(row.doctype,row.name,"remaining_qty",remaining_qty)
-									frappe.model.set_value(row.doctype,row.name,"amount",amount)
 									frm.trigger(gate_child.item_code, row.doctype, row.name)
 								});
 							}
@@ -196,17 +196,19 @@ frappe.ui.form.on('Gate Pass', {
 				// To get child date and set into table
 				let item = frm.doc.item
 				item.forEach(child_data => {
-					dialogs.fields_dict.alternative_items.df.data.push({
-						"docname": child_data.name,
-						"item_code": child_data.item_code,
-						"item_name":child_data.item_name,
-						"qty": child_data.qty, // Remaining Qty  Tranfor IN To Store
-						"uom":child_data.uom,
-						"amount":child_data.amount,
-						"actual_qty":child_data.actual_qty,
-						"remaining_qty":child_data.remaining_qty,
-						'rate':child_data.rate,
-					});
+					if (child_data.remaining_qty !==0){
+						dialogs.fields_dict.alternative_items.df.data.push({
+							"docname": child_data.name,
+							"item_code": child_data.item_code,
+							"item_name":child_data.item_name,
+							"qty": child_data.remaining_qty, // Remaining Qty  Tranfor IN To Store
+							"uom":child_data.uom,
+							"amount":child_data.amount,
+							"actual_qty":child_data.actual_qty,
+							"remaining_qty":child_data.remaining_qty,
+							'rate':child_data.rate,
+						});
+					}
 				})
 				data = dialogs.fields_dict.alternative_items.df.data;
 				dialogs.fields_dict.alternative_items.grid.refresh();
