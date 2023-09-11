@@ -135,6 +135,14 @@ frappe.ui.form.on('Gate Pass', {
 								// in_list_view: 1,
 								label: __('Rate')
 							},
+							{
+								fieldtype:'Float',
+								fieldname:"transfer_qty",
+								hidden: 1,
+								read_only: 1,
+								// in_list_view: 1,
+								label: __('Transfer Qty')
+							}
 							]
 						},
 						
@@ -160,16 +168,18 @@ frappe.ui.form.on('Gate Pass', {
 									if (row.remaining_qty === row.qty){
 										qty = transfer_in+0
 										remaining_qty = (row.actual_qty - (transfer_in+0))
+										frappe.model.set_value(row.doctype, row.name, 'transfer_qty', transfer_in);
+										frappe.model.set_value(row.doctype,row.name,"remaining_qty",remaining_qty)
 										final_remaining_qty += (row.actual_qty - (transfer_in+0))
 									}
 									else{
 										// qty = transfer_in+row.qty
-										qty = row.actual_qty - transfer_in
-										remaining_qty = (row.actual_qty - (transfer_in+qty))
-										final_remaining_qty += (row.actual_qty - (transfer_in+qty))
+										qty = transfer_in+row.transfer_qty
+										remaining_qty = row.actual_qty - qty
+										frappe.model.set_value(row.doctype,row.name,"remaining_qty",remaining_qty)
+										final_remaining_qty += row.actual_qty - qty
+										frappe.model.set_value(row.doctype, row.name, 'transfer_qty', qty);
 									}
-
-									// frappe.model.set_value(row.doctype, row.name, 'qty', qty);
 									
 									if (final_remaining_qty === 0){
 										let status = 'Completed'
@@ -179,7 +189,7 @@ frappe.ui.form.on('Gate Pass', {
 										frm.set_value("status","Partially Return")
 									}
 								
-									frappe.model.set_value(row.doctype,row.name,"remaining_qty",remaining_qty)
+									
 									frm.trigger(gate_child.item_code, row.doctype, row.name)
 								});
 							}
@@ -207,6 +217,7 @@ frappe.ui.form.on('Gate Pass', {
 							"actual_qty":child_data.actual_qty,
 							"remaining_qty":child_data.remaining_qty,
 							'rate':child_data.rate,
+							'transfer_qty':child_data.transfer_qty
 						});
 					}
 				})

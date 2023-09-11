@@ -223,9 +223,7 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
     
        
 @frappe.whitelist()        
-def material_returns_through_gatepass(doctype,name,return_item):
-    print(doctype, name, return_item)
-    
+def material_returns_through_gatepass(doctype,name,return_item):    
     
     data_details = frappe.get_doc(doctype,name)
     
