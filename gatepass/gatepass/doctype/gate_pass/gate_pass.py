@@ -12,6 +12,22 @@ class GatePass(Document):
     
 
 
+def get_fiscal_year() -> str:
+    
+    current_date = frappe.utils.nowdate()
+    
+    fiscal_year = frappe.get_all("Fiscal Year", filters={"year_start_date": ("<=", current_date), "year_end_date": (">=", current_date)})
+    
+    if fiscal_year:
+        
+        current_fiscal_year = fiscal_year[0].name
+        
+        return current_fiscal_year
+    else:
+        
+        frappe.throw("Set Fiscal Year")
+        
+
 # GL Entry Creation base on gate pass types
 def create_gl_entry_through_gate_pass(data,total,fiscal_year):
     '''
@@ -147,7 +163,9 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
     }
     
     total_amount = 0.0
-    fiscal_year = None
+    current_date = frappe.utils.nowdate()
+    fiscal_year = get_fiscal_year()
+    
     
     
     if method == 'on_submit':
@@ -175,7 +193,6 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
             })
             
             total_amount += (self.item[i].qty*self.item[i].rate)
-            fiscal_year = previous_sle['fiscal_year']
             
             gate_pass_item.update({
                 "qty_after_transaction":(previous_sle['qty_after_transaction']-self.item[i].qty),
@@ -188,7 +205,7 @@ def create_stock_ledger_entry_through_gatepass(self,method=None):
             
             gate_pass_item.update({
                 "stock_queue":stock_queue,
-                'fiscal_year':previous_sle['fiscal_year'],
+                'fiscal_year':fiscal_year,
                 'voucher_detail_no':self.item[i].name
             })
             
@@ -261,7 +278,7 @@ def material_returns_through_gatepass(doctype,name,return_item):
             'outgoing_rate':0.0
         }
         total_amount = 0.0
-        fiscal_year = None
+        fiscal_year = get_fiscal_year()
         
         for i in range(len(data)):
             gate_pass_item.update({
@@ -286,7 +303,6 @@ def material_returns_through_gatepass(doctype,name,return_item):
                         "posting_time": data_details.time,
             })
             
-            fiscal_year = previous_sle['fiscal_year']
             
             gate_pass_item.update({
                 "qty_after_transaction":(previous_sle['qty_after_transaction']+data[i]["qty"]),
@@ -299,7 +315,7 @@ def material_returns_through_gatepass(doctype,name,return_item):
             
             gate_pass_item.update({
                 "stock_queue":stock_queue,
-                'fiscal_year':previous_sle['fiscal_year'],
+                'fiscal_year':fiscal_year,
                 'voucher_detail_no':data[i]["docname"],
                 'incoming_rate':data[i]["rate"]
             })
