@@ -38,6 +38,36 @@ frappe.ui.form.on('Gate Pass', {
 	}
 });
 
+frappe.ui.form.on('Gate Pass', {
+	refresh: frm => {
+	    if (frm.doc.item){
+	         let total_quantity = flt(0.0);
+	        frm.doc.item.forEach(item => {
+	        if(item.amount) {
+                total_quantity += flt(item.amount);
+	        }
+	            
+	        });
+	        frm.set_value('total', total_quantity);
+	        
+	    }
+	   
+	}
+});
+
+frappe.ui.form.on("Gate pass item details",{
+    "qty":function(frm,cdt,cdn){
+        let item = locals[cdt][cdn];
+        item.amount = item.rate*item.qty;
+        cur_frm.refresh_fields();
+    },
+    "rate":function(frm,cdt,cdn){
+        let item = locals[cdt][cdn];
+        item.amount = item.rate*item.qty;
+        cur_frm.refresh_fields();
+    }
+})
+
 // frappe.ui.form.on('Gate Pass', {
 // 	item: function(frm) {
 // 		if (frm.doc.item){
